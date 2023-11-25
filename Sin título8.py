@@ -1,3 +1,7 @@
+import os
+
+
+
 # Crear un diccionario para llevar un registro de las transacciones de cada cliente
 transacciones = {}
 
@@ -14,12 +18,20 @@ dispensador = {
     10: 500  # Cantidad inicial de billetes de 10 soles
 }
 
-# Definir una base de datos de usuarios y contraseÒas para clientes y administradores
+# Definir una base de datos de usuarios y contrase√±as para clientes y administradores
 usuarios = {
     "cliente1": "clavecliente1",
     "cliente2": "clavecliente2",
     "admin": "claveadmin"
 }
+
+# Diccionario para mantener los saldos originales de los clientes
+saldos_originales = {
+    "cliente1": 1000,
+    "cliente2": 1500
+}
+
+
 
 # Definir los saldos iniciales para los clientes
 saldos = {
@@ -35,25 +47,85 @@ estado_clientes = {
 
 # Historial de movimientos de los clientes
 movimientos = {
-    "cliente1": [],
-    "cliente2": []
+    "cliente1": {"tipo": [], "monto": []},
+    "cliente2": {"tipo": [], "monto": []}
 }
 
 
 
 pagos_servicios = {}
-# FunciÛn para iniciar sesiÛn
+# Funci√≥n para iniciar sesi√≥n
 def login():
     while True:
         usuario = input("Usuario: ")
-        contrasena = input("ContraseÒa: ")
+        contrasena = input("Contrase√±a: ")
 
         if usuario in usuarios and usuarios[usuario] == contrasena:
             return usuario
         else:
-            print("Credenciales incorrectas. IntÈntelo de nuevo.")
+            print("Credenciales incorrectas. Int√©ntelo de nuevo.")
 
-# FunciÛn para mostrar el men˙ principal del cliente
+
+# Ruta del archivo de usuarios
+archivo_usuarios = 'usuarios.txt'
+
+# Funci√≥n para cargar los usuarios y saldos desde el archivo
+def cargar_usuarios():
+    # Verificar si el archivo existe
+    if os.path.isfile(archivo_usuarios):
+        with open(archivo_usuarios, 'r') as file:
+            lineas = file.readlines()
+
+            # Crear diccionarios de usuarios y saldos a partir de las l√≠neas del archivo
+            usuarios = {}
+            saldos = {}
+            for linea in lineas:
+                usuario, saldo = linea.strip().split(',')
+                usuarios[usuario] = "clave" + usuario  # Asignar una clave temporal (puedes cambiar esto)
+                saldos[usuario] = float(saldo)
+
+            return usuarios, saldos
+    else:
+        # Si el archivo no existe, devolver diccionarios vac√≠os
+        return {}, {}
+
+# Funci√≥n para guardar los usuarios y saldos en el archivo
+def guardar_usuarios(usuarios, saldos):
+    with open(archivo_usuarios, 'w') as file:
+        # Escribir cada usuario y su saldo en una l√≠nea separada
+        for usuario, saldo in saldos.items():
+            file.write(f"{usuario},{saldo}\n")
+
+# Crear el archivo y guardar datos preestablecidos si no existe
+def inicializar_archivo():
+    global usuarios, saldos
+    if not os.path.isfile(archivo_usuarios):
+        # Inicializar el diccionario de usuarios con el usuario "admin"
+        usuarios = {
+            "cliente1": "clavecliente1",
+            "cliente2": "clavecliente2",
+            "admin": "claveadmin"
+        }
+
+        # Inicializar el diccionario de saldos con saldos iniciales
+        saldos = {
+            "cliente1": 1000,
+            "cliente2": 1500,
+            "admin": 0  # Puedes asignar un saldo inicial para el administrador si es necesario
+        }
+
+        # Guardar usuarios y saldos actualizados en el archivo
+        guardar_usuarios(usuarios, saldos)
+
+# Llamar a la funci√≥n de inicializaci√≥n al inicio del programa
+inicializar_archivo()
+
+# Iniciar diccionarios de usuarios y saldos desde el archivo
+usuarios, saldos = cargar_usuarios()
+
+
+
+# Funci√≥n para mostrar el men√∫ principal del cliente
 def mostrar_menu_cliente(usuario):
     print("=" * 30)
     print(f"Bienvenido, {usuario} (Cliente).")
@@ -63,15 +135,15 @@ def mostrar_menu_cliente(usuario):
     print("4. Transferir")
     print("5. Pagar servicios")
     print("6. Consultar movimientos")
-    print("7. Cerrar sesiÛn")
+    print("7. Cerrar sesi√≥n")
     
-# FunciÛn para mostrar el men˙ principal del administrador
+# Funci√≥n para mostrar el men√∫ principal del administrador
 def mostrar_menu_admin(usuario):
     print("=" * 30)
     print(f"Bienvenido, {usuario} (Administrador).")
     print("1. Gestionar clientes")
     print("2. Gestionar dispensadores")
-    print("3. Salir (regresar a cajero autom·tico)")
+    print("3. Salir (regresar a cajero autom√°tico)")
     print("=" * 30)
     
 # Funci√≥n para consultar el saldo
@@ -80,52 +152,59 @@ def consultar_saldos(usuario):
     print(f"Saldo disponible: ${saldos[usuario]}")
     print("=" * 30)
     
-# FunciÛn para registrar una transacciÛn
+# Funci√≥n para registrar una transacci√≥n
 def registrar_transaccion(usuario, descripcion, monto):
     if usuario in transacciones:
         transacciones[usuario].append((descripcion, monto))
     else:
         transacciones[usuario] = [(descripcion, monto)]
-        
-# FunciÛn para agregar clientes
+
+
+# Funci√≥n para agregar clientes
 def agregar_cliente():
+    global usuarios, saldos
     print("=" * 30)
     usuario = input("Ingrese el nombre de usuario: ")
     if usuario in usuarios:
         print("El cliente ya existe.")
         return
 
-    contrasena = input("Ingrese la contraseÒa: ")
+    contrasena = input("Ingrese la contrase√±a: ")
     monto_inicial = float(input("Ingrese el monto inicial: $"))
     usuarios[usuario] = contrasena
     saldos[usuario] = monto_inicial
-    saldos_iniciales[usuario] = monto_inicial
-    estado_clientes[usuario] = "ACTIVO"
-    print(f"Cliente {usuario} agregado con Èxito.")
+    print(f"Cliente {usuario} agregado con √©xito.")
+
+    # Guardar usuarios y saldos actualizados en el archivo
+    guardar_usuarios(usuarios, saldos)
+    print("=" * 30)
+
     
-    
-# FunciÛn para modificar el saldo de un cliente
+# Funci√≥n para modificar el saldo de un cliente
 def modificar_cliente():
     print("=" * 30)
     usuario = input("Ingrese el nombre de usuario a modificar: ")
     if usuario in usuarios:
         nuevo_saldo = float(input(f"Ingrese el nuevo saldo para {usuario}: $"))
         saldos[usuario] = nuevo_saldo
-        print(f"Saldo de {usuario} modificado con Èxito.")
+        print(f"Saldo de {usuario} modificado con √©xito.")
     else:
         print("El cliente no existe.")
         
         
-# FunciÛn para listar clientes
+# Funci√≥n para listar clientes
 def listar_clientes():
-   print("=" * 30)
-   print("Listado de clientes:")
-   for cliente, saldo in saldos.items():
+    print("=" * 30)
+    print("Listado de clientes:")
+    for cliente in saldos.keys():
         if cliente != "admin":
-            print(f"{cliente} - Saldo original: ${saldo}, Saldo actual: ${saldos.get(cliente, 0)}")
+            saldo_original = saldos_originales.get(cliente, 0)
+            saldo_actual = saldos[cliente]
+            print(f"{cliente} - Saldo original: ${saldo_original}, Saldo actual: ${saldo_actual}")
 
 
-# FunciÛn para ordenar clientes por saldo
+
+# Funci√≥n para ordenar clientes por saldo
 def ordenar_clientes():
     print("=" * 30)
     print("Clientes ordenados por saldo:")
@@ -133,7 +212,7 @@ def ordenar_clientes():
     for cliente in clientes_ordenados:
         print(f"{cliente} - Saldo: ${saldos[cliente]}")
 
-# FunciÛn para buscar un cliente
+# Funci√≥n para buscar un cliente
 def buscar_cliente():
     print("=" * 30)
     usuario = input("Ingrese el nombre de usuario a buscar: ")
@@ -142,7 +221,7 @@ def buscar_cliente():
     else:
         print("El cliente no existe.")
 
-# FunciÛn para cambiar el estado de un cliente
+# Funci√≥n para cambiar el estado de un cliente
 def cambiar_estado_cliente():
     print("=" * 30)
     usuario = input("Ingrese el nombre de usuario a cambiar de estado: ")
@@ -152,14 +231,14 @@ def cambiar_estado_cliente():
             estado_clientes[usuario] = nuevo_estado
             if nuevo_estado == "BAJA" and usuario == usuario_activo:
                 print(f"Estado de {usuario} actualizado a BAJA. Su cuenta ha sido desactivada.")
-                print("SU CUENTA EST¡ DE BAJA, INT…NTELO M¡S TARDE.")
+                print("SU CUENTA EST√Å DE BAJA, INT√âNTELO M√ÅS TARDE.")
                 salir = input("Presione 'S' para salir: ")
                 if salir.upper() == "S":
                     return
             else:
                 print(f"Estado de {usuario} actualizado a {nuevo_estado}.")
         else:
-            print("Estado no v·lido.")
+            print("Estado no v√°lido.")
     else:
         print("El cliente no existe.")
 
@@ -168,11 +247,11 @@ def depositar(usuario):
     print("=" * 30)
     monto_deposito = float(input("Ingrese el monto a depositar: $"))
     if monto_deposito <= 0:
-        print("Monto inv·lido. El monto debe ser mayor que cero.")
+        print("Monto inv√°lido. El monto debe ser mayor que cero.")
     else:
         saldos[usuario] += monto_deposito
-        registrar_movimiento(usuario, "DepÛsito", monto_deposito)
-        print("DepÛsito exitoso.")
+        registrar_movimiento(usuario, "Dep√≥sito", monto_deposito)
+        print("Dep√≥sito exitoso.")
         consultar_saldos(usuario)
     print("=" * 30)
 
@@ -180,7 +259,7 @@ def retirar(usuario):
     print("=" * 30)
     monto_retiro = float(input("Ingrese el monto a retirar: $"))
     if monto_retiro <= 0:
-        print("Monto inv·lido. El monto debe ser mayor que cero.")
+        print("Monto inv√°lido. El monto debe ser mayor que cero.")
     elif monto_retiro > saldos[usuario]:
         print("Saldo insuficiente.")
     else:
@@ -196,7 +275,7 @@ def transferir(usuario):
     if usuario_destino in saldos and usuario_destino != usuario:
         monto_transferencia = float(input("Ingrese el monto a transferir: $"))
         if monto_transferencia <= 0:
-            print("Monto inv·lido. El monto debe ser mayor que cero.")
+            print("Monto inv√°lido. El monto debe ser mayor que cero.")
         elif monto_transferencia > saldos[usuario]:
             print("Saldo insuficiente.")
         else:
@@ -207,27 +286,29 @@ def transferir(usuario):
             print(f"Transferencia a {usuario_destino} exitosa.")
             consultar_saldos(usuario)
     else:
-        print("Usuario de destino no v·lido. Intente de nuevo.")
+        print("Usuario de destino no v√°lido. Intente de nuevo.")
     print("=" * 30)
 
-# FunciÛn para registrar movimientos
+# Funci√≥n para registrar movimientos
 def registrar_movimiento(usuario, tipo, monto):
-    movimiento = f"{tipo}: ${monto}"
-    if usuario in movimientos:
-        movimientos[usuario].append(movimiento)
-    else:
-        movimientos[usuario] = [movimiento]
+    movimiento = {"tipo": tipo, "monto": monto}
+    movimientos[usuario]["tipo"].append(movimiento["tipo"])
+    movimientos[usuario]["monto"].append(movimiento["monto"])
 
-# FunciÛn para consultar movimientos
+
+# Funci√≥n para consultar movimientos
 def consultar_movimientos(usuario):
     print("=" * 30)
-    if usuario in movimientos and movimientos[usuario]:
+    tipos_movimientos = movimientos[usuario]["tipo"]
+    montos_movimientos = movimientos[usuario]["monto"]
+
+    if tipos_movimientos:
         print("Movimientos recientes:")
-        for movimiento in movimientos[usuario]:
-            if "Retiro" in movimiento or "Pago" in movimiento or "Transferencia a" in movimiento:
-                print(chr(27) + "[1;31m" + movimiento + chr(27) + "[0m")  # Rojo para movimientos negativos
+        for tipo, monto in zip(tipos_movimientos, montos_movimientos):
+            if "Retiro" in tipo or "Pago" in tipo or "Transferencia a" in tipo:
+                print(chr(27) + "[1;31m" + f"{tipo}: ${monto}" + chr(27) + "[0m")
             else:
-                print(chr(27) + "[1;32m" + movimiento + chr(27) + "[0m")  # Verde para movimientos positivos
+                print(chr(27) + "[1;32m" + f"{tipo}: ${monto}" + chr(27) + "[0m")
     else:
         print("No hay movimientos registrados para este cliente.")
     print("=" * 30)
@@ -236,15 +317,15 @@ def consultar_movimientos(usuario):
 def gestionar_clientes():
     while True:
         print("=" * 30)
-        print("Men˙ de gestiÛn de clientes:")
+        print("Men√∫ de gesti√≥n de clientes:")
         print("1. Agregar clientes")
         print("2. Modificar clientes")
         print("3. Listar clientes")
         print("4. Ordenar clientes")
         print("5. Buscar clientes")
         print("6. Cambiar estado de clientes (activo/baja)")
-        print("7. Salir (regresar a men˙ administrador)")
-        opcion = input("Seleccione una opciÛn: ")
+        print("7. Salir (regresar a men√∫ administrador)")
+        opcion = input("Seleccione una opci√≥n: ")
 
         if opcion == "1":
             agregar_cliente()
@@ -261,9 +342,9 @@ def gestionar_clientes():
         elif opcion == "7":
             break
         else:
-            print("OpciÛn no v·lida. Intente de nuevo.")
+            print("Opci√≥n no v√°lida. Intente de nuevo.")
 
-# FunciÛn para pago de servicios
+# Funci√≥n para pago de servicios
 def pagar_servicios(usuario):
     print("=" * 30)
     print("Pago de servicios:")
@@ -278,7 +359,7 @@ def pagar_servicios(usuario):
     if opcion_servicio in ["1", "2", "3", "4", "5"]:
         monto_pago = float(input("Ingrese el monto a pagar: $"))
         if monto_pago <= 0:
-            print("Monto inv·lido. El monto debe ser mayor que cero.")
+            print("Monto inv√°lido. El monto debe ser mayor que cero.")
         elif monto_pago > saldos[usuario]:
             print("Saldo insuficiente.")
         else:
@@ -290,11 +371,11 @@ def pagar_servicios(usuario):
     elif opcion_servicio == "6":
         return
     else:
-        print("OpciÛn no v·lida. Intente de nuevo.")
+        print("Opci√≥n no v√°lida. Intente de nuevo.")
 
     print("=" * 30)
 
-# FunciÛn para obtener el nombre del servicio
+# Funci√≥n para obtener el nombre del servicio
 def obtener_nombre_servicio(opcion_servicio):
     servicios = {
         "1": "Agua",
@@ -303,26 +384,26 @@ def obtener_nombre_servicio(opcion_servicio):
         "4": "Gas",
         "5": "Universidad"
     }
-    return servicios.get(opcion_servicio, "Servicio no v·lido")
+    return servicios.get(opcion_servicio, "Servicio no v√°lido")
 
 
-# FunciÛn para modificar la cantidad de billetes en el dispensador
+# Funci√≥n para modificar la cantidad de billetes en el dispensador
 def modificar_cantidad_billetes():
     print("=" * 30)
     print("Modificar cantidad de billetes en el dispensador:")
     print("Denominaciones disponibles: 200, 100, 50, 20, 10")
-    denominacion = int(input("Ingrese la denominaciÛn del billete a modificar: "))
+    denominacion = int(input("Ingrese la denominaci√≥n del billete a modificar: "))
     if denominacion in dispensador:
         cantidad = int(input(f"Ingrese la nueva cantidad de billetes de {denominacion} soles: "))
         dispensador[denominacion] = cantidad
-        print(f"Cantidad de billetes de {denominacion} soles modificada con Èxito.")
+        print(f"Cantidad de billetes de {denominacion} soles modificada con √©xito.")
     else:
-        print("DenominaciÛn no v·lida. Intente de nuevo.")
+        print("Denominaci√≥n no v√°lida. Intente de nuevo.")
     print("=" * 30)
     
     
     
-# FunciÛn para ver las cantidades actuales de billetes en el dispensador
+# Funci√≥n para ver las cantidades actuales de billetes en el dispensador
 def ver_cantidad_billetes():
     print("=" * 30)
     print("Cantidades actuales de billetes en el dispensador:")
@@ -332,15 +413,15 @@ def ver_cantidad_billetes():
     
     
     
-# FunciÛn para gestionar dispensadores (opciÛn del administrador)
+# Funci√≥n para gestionar dispensadores (opci√≥n del administrador)
 def gestionar_dispensadores():
     while True:
         print("=" * 30)
-        print("Men˙ de gestiÛn de dispensadores:")
+        print("Men√∫ de gesti√≥n de dispensadores:")
         print("1. Modificar cantidad de billetes")
         print("2. Ver cantidades actuales de billetes")
-        print("3. Salir (regresar a men˙ administrador)")
-        opcion = input("Seleccione una opciÛn: ")
+        print("3. Salir (regresar a men√∫ administrador)")
+        opcion = input("Seleccione una opci√≥n: ")
 
         if opcion == "1":
             modificar_cantidad_billetes()
@@ -349,11 +430,11 @@ def gestionar_dispensadores():
         elif opcion == "3":
             break
         else:
-            print("OpciÛn no v·lida. Intente de nuevo.")
+            print("Opci√≥n no v√°lida. Intente de nuevo.")
 
 
 
-# Diccionario para relacionar opciones de pago de servicios con su descripciÛn
+# Diccionario para relacionar opciones de pago de servicios con su descripci√≥n
 opciones_servicios = {
     "1": "Agua",
     "2": "Luz",
@@ -369,28 +450,33 @@ usuario_activo = None
 # Ciclo principal del programa
 while True:
     print("=" * 30)
-    print("=== Cajero Autom·tico ===")
-    print("1. Iniciar sesiÛn como Cliente")
-    print("2. Iniciar sesiÛn como Administrador")
+    print("=== Cajero Autom√°tico ===")
+    print("1. Iniciar sesi√≥n como Cliente")
+    print("2. Iniciar sesi√≥n como Administrador")
     print("3. Cerrar")
     print("=" * 30)
 
-    opcion = input("Seleccione una opciÛn: ")
+    opcion = input("Seleccione una opci√≥n: ")
 
     if opcion == "1":
         usuario = login()
         if estado_clientes.get(usuario, "ACTIVO") == "BAJA":
-            print("SU CUENTA EST¡ DE BAJA, INT…NTELO M¡S TARDE.")
-            salir = input("Presione 'S' para salir: ")
-            if salir.upper() == "S":
-                break
-            else:
-                continue
+            print("SU CUENTA EST√Å DE BAJA, INT√âNTELO M√ÅS TARDE.")
+            salir = ""
+            while salir.upper() != "S":
+                salir = input("Presione 'S' para salir al inicio: ")
+                
+                if salir.upper() != "S":
+                    print("Opci√≥n inv√°lida. Por favor, ingrese 'S' para salir.")
+    
+            # El programa continuar√° desde aqu√≠ despu√©s de que el usuario ingrese 'S'
+            print("Continuando con el siguiente men√∫...")
+            continue
 
         usuario_activo = usuario
         while True:
             mostrar_menu_cliente(usuario)
-            opcion_cliente = input("Seleccione una opciÛn: ")
+            opcion_cliente = input("Seleccione una opci√≥n: ")
             if opcion_cliente == "1":
                 consultar_saldos(usuario)
             elif opcion_cliente == "2":
@@ -411,7 +497,7 @@ while True:
         usuario = login()
         while True:
             mostrar_menu_admin(usuario)
-            opcion_admin = input("Seleccione una opciÛn: ")
+            opcion_admin = input("Seleccione una opci√≥n: ")
             if opcion_admin == "1" and usuario == "admin":
                 gestionar_clientes()
             elif opcion_admin == "2" and usuario == "admin":
@@ -421,9 +507,9 @@ while True:
 
     elif opcion == "3":
         print("=" * 30)
-        print("Gracias por utilizar nuestro cajero autom·tico. Hasta luego.")
+        print("Gracias por utilizar nuestro cajero autom√°tico. Hasta luego.")
         print("=" * 30)
         break
 
     else:
-        print("OpciÛn no v·lida. Intente de nuevo.")
+        print("Opci√≥n no v√°lida. Intente de nuevo.")
